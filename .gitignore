@@ -1,0 +1,33 @@
+# development / build
+.deps/
+.deps_runtime/
+.venv/
+.venv38/
+.tmp/
+.cache/
+worktmp/
+build/
+build-win7/
+dist/
+dist-win7/
+__pycache__/
+*.pyc
+outputs/
+vendor/
+*.spec.bak
+
+# user data
+*.log
+
+# 打包 / 发布产物（不进仓库；安装包放 GitHub Releases）
+release/
+installer/out/
+installer/vc_redist.x64.exe
+installer/license.rtf.bak
+*.zip
+*.7z
+
+# 本机临时
+*.tmp
+Thumbs.db
+desktop.ini

@@ -1,0 +1,105 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 单元测试（Python ${{ matrix.python }} / windows-latest）
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [ '3.10', '3.12' ]
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: 安装测试所需依赖（不含 PyQt5 / ONNX Runtime，保持精简）
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install PyMuPDF==1.25.5 python-docx==1.2.0 reportlab==4.3.1 openpyxl==3.1.5
+
+      - name: 语法检查（全部 .py）
+        run: python -m compileall -q app.py doc_extract tests tools hooks installer
+
+      - name: 运行数据层/导出单元测试
+        run: python -m unittest discover -s tests -v
+
+  models:
+    name: 模型完整性校验
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 校验 5 个 ONNX 模型的 SHA256
+        shell: pwsh
+        run: |
+          $expected = [ordered]@{
+            'ch_PP-OCRv5_det_mobile.onnx'            = 'df9029acca09cf62d86f987b25ab1e5aa6aec9dad7fad7a45f7baf6bb42fe4b4'
+            'ch_PP-OCRv5_rec_mobile.onnx'            = '7d5a05a77cc32d7409d7a1fec71d6501d2a154a02298a0d2a860aa1b703a7cc2'
+            'ppocrv5_dict.txt'                       = 'd1979e9f794c464c0d2e0b70a7fe14dd978e9dc644c0e71f14158cdf8342af1b'
+            'layout_cdla.onnx'                       = '25b1f27ec56aa932a48f30cbd6293c358a156280f4b20b0a973bab210c39f62c'
+            'ch_ppstructure_mobile_v2_SLANet.onnx'   = 'ddfc6c97ee4db2a5e9de4de8b6a14508a39d42d228503219fdfebfac364885e3'
+          }
+          $fail = 0
+          foreach ($name in $expected.Keys) {
+            $path = Join-Path 'models' $name
+            if (-not (Test-Path $path)) { Write-Host "::error::缺少模型 $name"; $fail++; continue }
+            $actual = (Get-FileHash $path -Algorithm SHA256).Hash.ToLower()
+            if ($actual -ne $expected[$name]) {
+              Write-Host "::error::$name 校验失败`n  期望 $($expected[$name])`n  实际 $actual"
+              $fail++
+            } else { Write-Host "OK  $name" }
+          }
+          if ($fail -gt 0) { exit 1 }
+
+  repo-hygiene:
+    name: 仓库卫生检查
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 确认没有误提交构建产物 / 运行时二进制
+        shell: pwsh
+        run: |
+          $bad = Get-ChildItem -Recurse -File -Force |
+            Where-Object {
+              $_.FullName -notmatch '\\\.git\\' -and
+              ($_.FullName -match '\\(dist|build|release|\.venv|\.venv38|outputs|vendor)\\' -or
+               $_.Name -eq 'vc_redist.x64.exe' -or
+               $_.Extension -in @('.exe', '.zip', '.7z', '.pyc'))
+            }
+          if ($bad) {
+            Write-Host "::error::发现不应入库的文件："
+            $bad | ForEach-Object { Write-Host "  $($_.FullName)" }
+            exit 1
+          }
+          Write-Host "OK：未发现构建产物。"
+
+      - name: 确认没有硬编码的本机绝对路径
+        shell: pwsh
+        run: |
+          $hits = Select-String -Path (Get-ChildItem -Recurse -File -Include *.py,*.bat,*.ps1,*.md,*.spec,*.iss,*.json |
+                    Where-Object { $_.FullName -notmatch '\\\.git\\' }) -Pattern 'C:\\Users\\[^\\]+\\Desktop' -ErrorAction SilentlyContinue
+          if ($hits) {
+            Write-Host "::error::发现硬编码的个人路径："
+            $hits | ForEach-Object { Write-Host "  $($_.Path):$($_.LineNumber): $($_.Line.Trim())" }
+            exit 1
+          }
+          Write-Host "OK：未发现硬编码个人路径。"

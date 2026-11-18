@@ -1,0 +1,33 @@
+# 默认按文本处理，入库统一 LF
+* text=auto eol=lf
+
+# 源码
+*.py   text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.iss  text eol=lf
+*.spec text eol=lf
+
+# Windows 脚本需要 CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+*.rtf  text eol=crlf
+
+# 二进制：模型、图片、样例与导出样例
+*.onnx binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.bmp  binary
+*.tiff binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.docx binary
+*.xlsx binary
+*.zip  binary
+*.exe  binary

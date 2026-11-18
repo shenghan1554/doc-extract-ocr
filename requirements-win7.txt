@@ -1,0 +1,36 @@
+﻿# Doc Extract - Windows 7 SP1 / 8 / 8.1 (64-bit) compatibility set
+# Requires Python 3.8.10 x64 (last Python version supporting Windows 7).
+# CPU must support AVX; 4 GB RAM recommended.
+# Install with:
+#   py -3.8 -m pip install -r requirements-win7.txt
+PyQt5==5.15.11
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.15.0
+numpy==1.24.4
+opencv-python-headless==4.5.5.64
+Pillow==9.5.0
+PyMuPDF==1.22.5
+reportlab==4.0.9
+python-docx==1.1.2
+openpyxl==3.1.5
+onnxruntime==1.14.1
+rapidocr==3.10.0
+# 0.2.x is the last line compatible with NumPy 1.x / Python 3.8.
+rapid-layout==0.1.0
+pyclipper==1.3.0.post5
+shapely==2.0.6
+PyYAML==6.0.1
+tqdm==4.67.1
+colorlog==6.9.0
+omegaconf==2.3.0
+requests==2.32.3
+antlr4-python3-runtime==4.9.3
+chardet==5.2.0
+packaging==24.2
+urllib3==1.26.20
+certifi==2024.8.30
+idna==3.10
+charset-normalizer==3.3.2
+
+onnx==1.15.0
+
